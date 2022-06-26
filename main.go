@@ -16,56 +16,75 @@ type Arguments map[string]string
 func Perform(args Arguments, writer io.Writer) error {
 	switch args["operation"] {
 	case "add":
-		if err := validateArguments(args, true, false); err != nil {
-			return err
-		}
-		if err := AddItem(args["item"], args["fileName"]); err != nil {
-			_, err2 := writer.Write([]byte(err.Error()))
-			if err2 != nil {
-				return err2
-			}
-		}
+		return PerfomAdd(args, writer)
 	case "list":
-		if err := validateArguments(args, false, false); err != nil {
-			return err
-		}
-		items, err := ListItems(args["fileName"])
-		if err != nil {
-			return err
-		}
-		if len(items) > 0 {
-			data := dumpItemsToString(items)
-			_, err = writer.Write([]byte(data))
-			if err != nil {
-				return err
-			}
-		}
+		return PerfomList(args, writer)
 	case "findById":
-		if err := validateArguments(args, false, true); err != nil {
-			return err
-		}
-		item, err := FindItemById(args["id"], args["fileName"])
-		if err == nil {
-			_, err := writer.Write([]byte(dumpItemToString(item)))
-			if err != nil {
-				return err
-			}
-		}
+		return PerfomFindById(args, writer)
 	case "remove":
-		if err := validateArguments(args, false, true); err != nil {
-			return err
-		}
-		if err := RemoveItem(args["id"], args["fileName"]); err != nil {
-			_, err2 := writer.Write([]byte(err.Error()))
-			if err2 != nil {
-				return err2
-			}
-		}
+		return PerformRemove(args, writer)
 	default:
 		if err := validateArguments(args, false, false); err != nil {
 			return err
 		}
 		return fmt.Errorf("Operation %v not allowed!", args["operation"])
+	}
+}
+
+func PerfomAdd(args Arguments, writer io.Writer) error {
+	if err := validateArguments(args, true, false); err != nil {
+		return err
+	}
+	if err := AddItem(args["item"], args["fileName"]); err != nil {
+		_, err2 := writer.Write([]byte(err.Error()))
+		if err2 != nil {
+			return err2
+		}
+	}
+	return nil
+}
+
+func PerfomList(args Arguments, writer io.Writer) error {
+	if err := validateArguments(args, false, false); err != nil {
+		return err
+	}
+	items, err := ListItems(args["fileName"])
+	if err != nil {
+		return err
+	}
+	if len(items) > 0 {
+		data := dumpItemsToString(items)
+		_, err = writer.Write([]byte(data))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func PerfomFindById(args Arguments, writer io.Writer) error {
+	if err := validateArguments(args, false, true); err != nil {
+		return err
+	}
+	item, err := FindItemById(args["id"], args["fileName"])
+	if err == nil {
+		_, err := writer.Write([]byte(dumpItemToString(item)))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func PerformRemove(args Arguments, writer io.Writer) error {
+	if err := validateArguments(args, false, true); err != nil {
+		return err
+	}
+	if err := RemoveItem(args["id"], args["fileName"]); err != nil {
+		_, err2 := writer.Write([]byte(err.Error()))
+		if err2 != nil {
+			return err2
+		}
 	}
 	return nil
 }
