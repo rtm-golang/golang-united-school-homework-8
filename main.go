@@ -24,7 +24,6 @@ func Perform(args Arguments, writer io.Writer) error {
 			if err2 != nil {
 				return err2
 			}
-			// return err // Better to return err instead of output err message to writer
 		}
 	case "list":
 		if err := validateArguments(args, false, false); err != nil {
@@ -35,11 +34,7 @@ func Perform(args Arguments, writer io.Writer) error {
 			return err
 		}
 		if len(items) > 0 {
-			data := dumpItemsToString(items) // Confused by test's comapring strings as a result, because initially JSON unordered structure
-			// data, err := json.Marshal(items)
-			// if err != nil {
-			// 	return err
-			// }
+			data := dumpItemsToString(items)
 			_, err = writer.Write([]byte(data))
 			if err != nil {
 				return err
@@ -55,14 +50,7 @@ func Perform(args Arguments, writer io.Writer) error {
 			if err != nil {
 				return err
 			}
-		} // Confused by test's no reaction for wrong ID
-		// } else {
-		// 	_, err2 := writer.Write([]byte(err.Error()))
-		// 	if err2 != nil {
-		// 		return err2
-		// 	}
-		// 	// return err // Better to return err instead of output err message to writer
-		// }
+		}
 	case "remove":
 		if err := validateArguments(args, false, true); err != nil {
 			return err
@@ -72,7 +60,6 @@ func Perform(args Arguments, writer io.Writer) error {
 			if err2 != nil {
 				return err2
 			}
-			// return err // Better to return err instead of output err message to writer
 		}
 	default:
 		if err := validateArguments(args, false, false); err != nil {
@@ -98,7 +85,7 @@ func parseArgs() Arguments {
 	}
 }
 
-//
+// Return errors of validation from command-line arguments
 func validateArguments(args Arguments, isMandatoryItem bool, isMandatoryId bool) error {
 	if len(args["fileName"]) == 0 {
 		return errors.New("-fileName flag has to be specified")
@@ -148,11 +135,7 @@ func AddItem(item string, fileName string) error {
 	}
 	// Add item to items, then wtite items to file
 	items = append(items, itemMap)
-	data := dumpItemsToString(items) // Confused by test's comapring strings as a result, because initially JSON unordered structure
-	// data, err := json.Marshal(items)
-	// if err != nil {
-	// 	return err
-	// }
+	data := dumpItemsToString(items)
 	if err := os.WriteFile(fileName, []byte(data), 0644); err != nil {
 		return err
 	}
@@ -195,11 +178,7 @@ func RemoveItem(id string, fileName string) error {
 	for i, m := range items {
 		if m["id"].(string) == id {
 			items = append(items[:i], items[i+1:]...)
-			data := dumpItemsToString(items) // Confused by test's comapring strings as a result, because initially JSON unordered structure
-			// data, err := json.Marshal(items)
-			// if err != nil {
-			// 	return err
-			// }
+			data := dumpItemsToString(items)
 			if err := os.WriteFile(fileName, []byte(data), 0644); err != nil {
 				return err
 			}
