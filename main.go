@@ -14,6 +14,92 @@ import (
 type Arguments map[string]string
 
 func Perform(args Arguments, writer io.Writer) error {
+	switch args["operation"] {
+	case "add":
+		if err := validateArguments(args, true, false); err != nil {
+			return err
+		}
+		if err := AddItem(args["item"], args["fileName"]); err != nil {
+			_, err2 := writer.Write([]byte(err.Error()))
+			if err2 != nil {
+				return err2
+			}
+			// return err // Better to return err instead of output err message to writer
+		}
+	case "list":
+		if err := validateArguments(args, false, false); err != nil {
+			return err
+		}
+		items, err := ListItems(args["fileName"])
+		if err != nil {
+			return err
+		}
+		if len(items) > 0 {
+			data := dumpItemsToString(items) // Confused by test's comapring strings as a result, because initially JSON unordered structure
+			// data, err := json.Marshal(items)
+			// if err != nil {
+			// 	return err
+			// }
+			_, err = writer.Write([]byte(data))
+			if err != nil {
+				return err
+			}
+		}
+	case "findById":
+		if err := validateArguments(args, false, true); err != nil {
+			return err
+		}
+		item, err := FindItemById(args["id"], args["fileName"])
+		if err == nil {
+			_, err := writer.Write([]byte(dumpItemToString(item)))
+			if err != nil {
+				return err
+			}
+		} // Confused by test's no reaction for wrong ID
+		// } else {
+		// 	_, err2 := writer.Write([]byte(err.Error()))
+		// 	if err2 != nil {
+		// 		return err2
+		// 	}
+		// 	// return err // Better to return err instead of output err message to writer
+		// }
+	case "remove":
+		if err := validateArguments(args, false, true); err != nil {
+			return err
+		}
+		if err := RemoveItem(args["id"], args["fileName"]); err != nil {
+			_, err2 := writer.Write([]byte(err.Error()))
+			if err2 != nil {
+				return err2
+			}
+			// return err // Better to return err instead of output err message to writer
+		}
+	default:
+		if err := validateArguments(args, false, false); err != nil {
+			return err
+		}
+		return fmt.Errorf("Operation %v not allowed!", args["operation"])
+	}
+	return nil
+}
+
+// Parse command-line arguments with retrieving id value from item data map
+func parseArgs() Arguments {
+	var flagOperation = flag.String("operation", "", "operation to manipulate item's data")
+	var flagFileName = flag.String("fileName", "", "file name to store item's data")
+	var flagItem = flag.String("item", "", "map with item's data")
+	var flagId = flag.String("id", "", "map with item's data")
+	flag.Parse()
+	return Arguments{
+		"id":        *flagId,
+		"operation": *flagOperation,
+		"item":      *flagItem,
+		"fileName":  *flagFileName,
+	}
+}
+
+//
+func validateArguments(args Arguments, isMandatoryItem bool, isMandatoryId bool) error {
 	if len(args["fileName"]) == 0 {
 		return errors.New("-fileName flag has to be specified")
 	}
@@ -33,82 +119,13 @@ func Perform(args Arguments, writer io.Writer) error {
 	if len(args["operation"]) == 0 {
 		return errors.New("-operation flag has to be specified")
 	}
-	switch args["operation"] {
-	case "add":
-		if len(args["item"]) == 0 {
-			return errors.New("-item flag has to be specified")
-		}
-		if err := AddItem(args["item"], args["fileName"]); err != nil {
-			_, err2 := writer.Write([]byte(err.Error()))
-			if err2 != nil {
-				return err2
-			}
-			// return err // Better to return err instead of output err message to writer
-		}
-	case "list":
-		items, err := ListItems(args["fileName"])
-		if err != nil {
-			return err
-		}
-		if len(items) > 0 {
-			data := dumpItemsToString(items) // Confused by test's comapring strings as a result, because initially JSON unordered structure
-			// data, err := json.Marshal(items)
-			// if err != nil {
-			// 	return err
-			// }
-			_, err = writer.Write([]byte(data))
-			if err != nil {
-				return err
-			}
-		}
-	case "findById":
-		if len(args["id"]) == 0 {
-			return errors.New("-id flag has to be specified")
-		}
-		item, err := FindItemById(args["id"], args["fileName"])
-		if err == nil {
-			_, err := writer.Write([]byte(dumpItemToString(item)))
-			if err != nil {
-				return err
-			}
-		} // Confused by test's no reaction for wrong ID
-		// } else {
-		// 	_, err2 := writer.Write([]byte(err.Error()))
-		// 	if err2 != nil {
-		// 		return err2
-		// 	}
-		// 	// return err // Better to return err instead of output err message to writer
-		// }
-	case "remove":
-		if len(args["id"]) == 0 {
-			return errors.New("-id flag has to be specified")
-		}
-		if err := RemoveItem(args["id"], args["fileName"]); err != nil {
-			_, err2 := writer.Write([]byte(err.Error()))
-			if err2 != nil {
-				return err2
-			}
-			// return err // Better to return err instead of output err message to writer
-		}
-	default:
-		return fmt.Errorf("Operation %v not allowed!", args["operation"])
+	if isMandatoryItem && len(args["item"]) == 0 {
+		return errors.New("-item flag has to be specified")
+	}
+	if isMandatoryId && len(args["id"]) == 0 {
+		return errors.New("-id flag has to be specified")
 	}
 	return nil
-}
-
-// Parse command-line arguments with retrieving id value from item data map
-func parseArgs() Arguments {
-	var flagOperation = flag.String("operation", "", "operation to manipulate item's data")
-	var flagFileName = flag.String("fileName", "", "file name to store item's data")
-	var flagItem = flag.String("item", "", "map with item's data")
-	var flagId = flag.String("id", "", "map with item's data")
-	flag.Parse()
-	return Arguments{
-		"id":        *flagId,
-		"operation": *flagOperation,
-		"item":      *flagItem,
-		"fileName":  *flagFileName,
-	}
 }
 
 // Add item to file if provided id is unique within file data
